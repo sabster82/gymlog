@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GymLog AI">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="AI-powered gym workout logger">
+<title>GymLog AI</title>
+
+<!-- PWA Manifest injected inline via JS blob -->
+<link id="manifestLink" rel="manifest">
+
+<!-- Apple Touch Icons (inline SVG → canvas → dataURL via JS) -->
+<link id="appleTouchIcon" rel="apple-touch-icon">
+
+<!-- Splash screens handled via JS -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-body: 'Inter', sans-serif;
+  --font-display: 'Barlow Condensed', sans-serif;
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;
+  --space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;
+  --radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;
+  --transition:180ms cubic-bezier(0.16,1,0.3,1);
+}
+[data-theme="dark"] {
+  --bg:#0f1117;--surface:#161b22;--surface-2:#1c2230;--surface-offset:#212840;
+  --border:rgba(255,255,255,0.08);--text:#e6e8f0;--text-muted:#7a8099;--text-faint:#3d4260;
+  --primary:#5b8af5;--primary-hover:#4070e8;--primary-dim:rgba(91,138,245,0.15);
+  --success:#3dd68c;--success-dim:rgba(61,214,140,0.12);
+  --warning:#f0a843;--error:#f06e6e;--error-dim:rgba(240,110,110,0.12);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 12px 40px rgba(0,0,0,0.6);
+  --mg-chest:#e85d5d;--mg-chest-dim:rgba(232,93,93,0.12);
+  --mg-back:#5b8af5;--mg-back-dim:rgba(91,138,245,0.12);
+  --mg-shoulders:#f0a843;--mg-shoulders-dim:rgba(240,168,67,0.12);
+  --mg-biceps:#a78bfa;--mg-biceps-dim:rgba(167,139,250,0.12);
+  --mg-triceps:#f472b6;--mg-triceps-dim:rgba(244,114,182,0.12);
+  --mg-legs:#3dd68c;--mg-legs-dim:rgba(61,214,140,0.12);
+  --mg-core:#fb923c;--mg-core-dim:rgba(251,146,60,0.12);
+  --mg-cardio:#22d3ee;--mg-cardio-dim:rgba(34,211,238,0.12);
+  --mg-full:#a3e635;--mg-full-dim:rgba(163,230,53,0.12);
+  --mg-other:#94a3b8;--mg-other-dim:rgba(148,163,184,0.12);
+}
+[data-theme="light"] {
+  --bg:#f4f5f9;--surface:#ffffff;--surface-2:#f0f2f8;--surface-offset:#e8eaf2;
+  --border:rgba(0,0,0,0.08);--text:#1a1d2e;--text-muted:#5a6080;--text-faint:#b0b5cc;
+  --primary:#2d5fe0;--primary-hover:#1e4acc;--primary-dim:rgba(45,95,224,0.1);
+  --success:#1a9e5c;--success-dim:rgba(26,158,92,0.1);
+  --warning:#c87820;--error:#d93e3e;--error-dim:rgba(217,62,62,0.1);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.08);--shadow-lg:0 12px 40px rgba(0,0,0,0.12);
+  --mg-chest:#c0392b;--mg-chest-dim:rgba(192,57,43,0.1);
+  --mg-back:#2d5fe0;--mg-back-dim:rgba(45,95,224,0.1);
+  --mg-shoulders:#b07820;--mg-shoulders-dim:rgba(176,120,32,0.1);
+  --mg-biceps:#6d28d9;--mg-biceps-dim:rgba(109,40,217,0.1);
+  --mg-triceps:#be185d;--mg-triceps-dim:rgba(190,24,93,0.1);
+  --mg-legs:#1a9e5c;--mg-legs-dim:rgba(26,158,92,0.1);
+  --mg-core:#c2410c;--mg-core-dim:rgba(194,65,12,0.1);
+  --mg-cardio:#0e7490;--mg-cardio-dim:rgba(14,116,144,0.1);
+  --mg-full:#4d7c0f;--mg-full-dim:rgba(77,124,15,0.1);
+  --mg-other:#475569;--mg-other-dim:rgba(71,85,105,0.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:none;scroll-behavior:smooth}
+body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+input,textarea,select{font:inherit;color:inherit;background:none;border:none;outline:none}
+img{display:block;max-width:100%}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--radius-sm)}
+.app{display:flex;flex-direction:column;min-height:100dvh;max-width:480px;margin:0 auto}
+
+/* HEADER */
+.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 0 0}
+.header-inner{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4)}
+.logo{display:flex;align-items:center;gap:var(--space-2)}
+.logo-icon{width:32px;height:32px;background:var(--primary);border-radius:var(--radius-md);display:grid;place-items:center;flex-shrink:0}
+.logo-text{font-family:var(--font-display);font-size:var(--text-lg);font-weight:700;letter-spacing:.02em;line-height:1}
+.header-actions{display:flex;gap:var(--space-2);align-items:center}
+.icon-btn{width:36px;height:36px;border-radius:var(--radius-md);display:grid;place-items:center;color:var(--text-muted);transition:background var(--transition),color var(--transition)}
+.icon-btn:hover{background:var(--surface-offset);color:var(--text)}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-tabs{display:flex;padding:0 var(--space-4) var(--space-3);gap:var(--space-2)}
+.nav-tab{flex:1;padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:500;color:var(--text-muted);transition:all var(--transition);text-align:center}
+.nav-tab.active{background:var(--primary-dim);color:var(--primary)}
+.nav-tab:hover:not(.active){background:var(--surface-offset);color:var(--text)}
+
+/* MAIN */
+.main{flex:1;padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)}
+.view{display:none;flex-direction:column;gap:var(--space-4)}
+.view.active{display:flex}
+
+/* CARD */
+.card{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-5);box-shadow:var(--shadow-md)}
+.card-title{font-family:var(--font-display);font-size:var(--text-lg);font-weight:700;letter-spacing:.02em;margin-bottom:var(--space-4);display:flex;align-items:center;gap:var(--space-2)}
+.card-title svg{width:18px;height:18px;stroke:var(--primary);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* FORM */
+.settings-group{display:flex;flex-direction:column;gap:var(--space-3)}
+.settings-label{font-size:var(--text-xs);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-1);display:block}
+.input-field{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--text);transition:border-color var(--transition),box-shadow var(--transition)}
+.input-field:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-dim)}
+.input-field::placeholder{color:var(--text-faint)}
+.input-row{position:relative}
+.input-toggle{position:absolute;right:var(--space-3);top:50%;transform:translateY(-50%);color:var(--text-muted);padding:var(--space-1);border-radius:var(--radius-sm)}
+.input-toggle svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.save-btn{width:100%;padding:var(--space-3) var(--space-4);background:var(--primary);color:white;border-radius:var(--radius-md);font-weight:600;font-size:var(--text-sm);transition:background var(--transition),transform var(--transition);margin-top:var(--space-2)}
+.save-btn:hover{background:var(--primary-hover)}
+.save-btn:active{transform:scale(.98)}
+.status-badge{display:inline-flex;align-items:center;gap:var(--space-1);padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600}
+.status-badge.connected{background:var(--success-dim);color:var(--success)}
+.status-badge.disconnected{background:var(--error-dim);color:var(--error)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.help-text{font-size:var(--text-xs);color:var(--text-muted);line-height:1.5}
+.help-text a{color:var(--primary);text-decoration:none}
+
+/* INSTALL BANNER */
+.install-banner{display:none;background:var(--primary-dim);border:1px solid var(--primary);border-radius:var(--radius-lg);padding:var(--space-4);gap:var(--space-3);align-items:flex-start;margin-bottom:var(--space-2)}
+.install-banner.visible{display:flex}
+.install-banner-icon{color:var(--primary);flex-shrink:0;font-size:20px;line-height:1}
+.install-banner-text{flex:1;font-size:var(--text-xs);color:var(--text);line-height:1.6}
+.install-banner-text strong{color:var(--primary);display:block;margin-bottom:2px;font-size:var(--text-sm)}
+.install-banner-close{color:var(--text-muted);font-size:18px;padding:2px;line-height:1;flex-shrink:0}
+
+/* IMPORT */
+.url-textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--text);resize:none;min-height:80px;transition:border-color var(--transition),box-shadow var(--transition);line-height:1.5}
+.url-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-dim)}
+.url-textarea::placeholder{color:var(--text-faint)}
+.import-btn{width:100%;padding:var(--space-4);background:var(--primary);color:white;border-radius:var(--radius-lg);font-family:var(--font-display);font-size:var(--text-lg);font-weight:700;letter-spacing:.04em;transition:background var(--transition),transform var(--transition);display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
+.import-btn:hover:not(:disabled){background:var(--primary-hover)}
+.import-btn:active:not(:disabled){transform:scale(.98)}
+.import-btn:disabled{opacity:.5;cursor:not-allowed}
+.import-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* LOADING */
+.loading-card{background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-8);text-align:center;display:none;flex-direction:column;align-items:center;gap:var(--space-4)}
+.loading-card.visible{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text-muted);font-size:var(--text-sm)}
+.loading-sub{color:var(--text-faint);font-size:var(--text-xs)}
+
+/* ERROR */
+.error-banner{display:none;background:var(--error-dim);border:1px solid var(--error);border-radius:var(--radius-lg);padding:var(--space-4);gap:var(--space-3);align-items:flex-start}
+.error-banner.visible{display:flex}
+.error-icon{color:var(--error);flex-shrink:0;margin-top:1px}
+.error-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.error-text{flex:1;font-size:var(--text-sm);color:var(--text);line-height:1.5}
+.error-text strong{color:var(--error);display:block;margin-bottom:var(--space-1)}
+
+/* WORKOUT RESULT */
+.workout-result{display:none;flex-direction:column;gap:var(--space-3)}
+.workout-result.visible{display:flex}
+.workout-header-card{background:linear-gradient(135deg,var(--primary-dim),var(--surface));border:1px solid var(--primary);border-radius:var(--radius-xl);padding:var(--space-5)}
+.workout-name{font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;letter-spacing:.02em;margin-bottom:var(--space-2)}
+.workout-meta{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.workout-tag{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-full);padding:var(--space-1) var(--space-3);font-size:var(--text-xs);font-weight:500;color:var(--text-muted)}
+.workout-description{margin-top:var(--space-3);font-size:var(--text-sm);color:var(--text-muted);line-height:1.6}
+
+/* MUSCLE GROUP SECTIONS */
+.muscle-group-section{display:flex;flex-direction:column;gap:var(--space-2)}
+.mg-header{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);margin-bottom:var(--space-1)}
+.mg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mg-label{font-family:var(--font-display);font-size:var(--text-sm);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.mg-count{font-size:var(--text-xs);font-weight:600;margin-left:auto;opacity:.7}
+
+/* EXERCISE CARDS */
+.exercise-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:box-shadow var(--transition)}
+.exercise-header{display:flex;align-items:center;padding:var(--space-4);gap:var(--space-3);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.exercise-num{width:28px;height:28px;border-radius:var(--radius-full);display:grid;place-items:center;font-size:var(--text-xs);font-weight:700;flex-shrink:0}
+.exercise-name{flex:1;font-weight:600;font-size:var(--text-sm)}
+.exercise-sets-badge{background:var(--surface-2);border-radius:var(--radius-full);padding:var(--space-1) var(--space-2);font-size:var(--text-xs);font-weight:600;color:var(--text-muted);white-space:nowrap}
+.exercise-chevron{color:var(--text-faint);transition:transform var(--transition)}
+.exercise-chevron svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.exercise-card.expanded .exercise-chevron{transform:rotate(180deg)}
+.exercise-body{display:none;padding:0 var(--space-4) var(--space-4);flex-direction:column;gap:var(--space-3)}
+.exercise-card.expanded .exercise-body{display:flex}
+
+/* SETS TABLE */
+.sets-table{width:100%;border-collapse:collapse}
+.sets-table th{font-size:var(--text-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);text-align:left;padding:0 var(--space-2) var(--space-2)}
+.sets-table td{padding:var(--space-2);font-size:var(--text-sm);font-variant-numeric:tabular-nums}
+.set-row{border-top:1px solid var(--border)}
+.set-num{color:var(--text-muted);font-size:var(--text-xs);font-weight:600}
+.set-input{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:var(--radius-sm);padding:var(--space-1) var(--space-2);font-size:var(--text-sm);text-align:center;color:var(--text);transition:border-color var(--transition)}
+.set-input:focus{border-color:var(--primary)}
+.exercise-notes{background:var(--surface-2);border-radius:var(--radius-md);padding:var(--space-3);font-size:var(--text-xs);color:var(--text-muted);line-height:1.5}
+.exercise-notes strong{color:var(--text)}
+
+/* ACTION BUTTONS */
+.action-row{display:flex;gap:var(--space-3)}
+.btn-secondary{flex:1;padding:var(--space-3);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;color:var(--text-muted);transition:all var(--transition);text-align:center}
+.btn-secondary:hover{background:var(--surface-offset);color:var(--text)}
+.btn-primary-full{flex:2;padding:var(--space-3);background:var(--primary);color:white;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:700;transition:background var(--transition),transform var(--transition);text-align:center}
+.btn-primary-full:hover{background:var(--primary-hover)}
+.btn-primary-full:active{transform:scale(.98)}
+
+/* HISTORY */
+.history-empty{text-align:center;padding:var(--space-12) var(--space-4);color:var(--text-muted)}
+.history-empty svg{width:48px;height:48px;stroke:var(--text-faint);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto var(--space-4)}
+.history-empty h3{font-size:var(--text-base);font-weight:600;color:var(--text);margin-bottom:var(--space-2)}
+.history-empty p{font-size:var(--text-sm);color:var(--text-muted);max-width:28ch;margin:0 auto}
+.history-list{display:flex;flex-direction:column;gap:var(--space-3)}
+.history-date-group{display:flex;flex-direction:column;gap:var(--space-2)}
+.history-date-label{font-size:var(--text-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:0 var(--space-2);margin-bottom:var(--space-1)}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;align-items:center;gap:var(--space-3);cursor:pointer;transition:box-shadow var(--transition),border-color var(--transition);-webkit-tap-highlight-color:transparent}
+.history-item:hover{border-color:var(--primary);box-shadow:var(--shadow-md)}
+.history-icon{width:40px;height:40px;background:var(--primary-dim);border-radius:var(--radius-md);display:grid;place-items:center;flex-shrink:0;color:var(--primary)}
+.history-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.history-info{flex:1;min-width:0}
+.history-name{font-weight:600;font-size:var(--text-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-sub{font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-count{font-size:var(--text-xs);font-weight:600;color:var(--text-muted);background:var(--surface-2);padding:var(--space-1) var(--space-2);border-radius:var(--radius-full);white-space:nowrap}
+.mg-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:var(--space-2)}
+.mg-chip{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:var(--radius-full);border:1px solid}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;padding:var(--space-4)}
+.modal-overlay.open{display:flex}
+.modal{width:100%;max-width:480px;margin:0 auto;background:var(--surface);border-radius:var(--radius-xl);border:1px solid var(--border);padding:var(--space-6);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:var(--space-4);max-height:85dvh;overflow-y:auto}
+.modal-title{font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;letter-spacing:.02em}
+.modal-close{width:32px;height:32px;border-radius:var(--radius-full);background:var(--surface-2);display:grid;place-items:center;color:var(--text-muted)}
+.modal-close svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + var(--space-6));left:50%;transform:translateX(-50%) translateY(100px);background:var(--text);color:var(--bg);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:600;z-index:1000;white-space:nowrap;transition:transform .3s cubic-bezier(0.16,1,0.3,1);pointer-events:none;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--success);color:#0a2e1c}
+.toast.error-t{background:var(--error);color:white}
+
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.workout-result.visible > *{animation:fadeInUp .3s cubic-bezier(0.16,1,0.3,1) both}
+.workout-result.visible > *:nth-child(1){animation-delay:0ms}
+.workout-result.visible > *:nth-child(2){animation-delay:60ms}
+.workout-result.visible > *:nth-child(3){animation-delay:120ms}
+.workout-result.visible > *:nth-child(4){animation-delay:160ms}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <!-- Dumbbell icon -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="9" width="4" height="6" rx="1"/>
+            <rect x="19" y="9" width="4" height="6" rx="1"/>
+            <rect x="4" y="7" width="3" height="10" rx="1"/>
+            <rect x="17" y="7" width="3" height="10" rx="1"/>
+            <line x1="7" y1="12" x2="17" y2="12"/>
+          </svg>
+        </div>
+        <span class="logo-text">GymLog AI</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="openSettingsModal()" aria-label="API Settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('import',this)">Import</button>
+      <button class="nav-tab" onclick="switchView('history',this)">History</button>
+      <button class="nav-tab" onclick="switchView('settings',this)">Settings</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- IMPORT VIEW -->
+    <div class="view active" id="view-import">
+
+      <!-- Install banner (shown only in Safari before adding to home screen) -->
+      <div class="install-banner" id="installBanner">
+        <div class="install-banner-icon">📲</div>
+        <div class="install-banner-text">
+          <strong>Add to Home Screen</strong>
+          Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install GymLog AI as an app. History saves offline.
+        </div>
+        <button class="install-banner-close" onclick="dismissInstallBanner()" aria-label="Dismiss">✕</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/></svg>
+          Paste Video Link
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <textarea class="url-textarea" id="urlInput" placeholder="Paste Instagram Reel, TikTok or YouTube link here…" rows="3"></textarea>
+          <div>
+            <label class="settings-label">Additional context (optional)</label>
+            <input type="text" class="input-field" id="contextInput" placeholder="e.g. beginner, home workout, no equipment">
+          </div>
+          <button class="import-btn" id="importBtn" onclick="importWorkout()">
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            ANALYSE WORKOUT
+          </button>
+        </div>
+      </div>
+
+      <div class="error-banner" id="errorBanner">
+        <div class="error-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="error-text"><strong id="errorTitle">Error</strong><span id="errorMsg"></span></div>
+      </div>
+
+      <div class="loading-card" id="loadingCard">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Sending to AI…</div>
+        <div class="loading-sub">Grouping exercises by muscle group</div>
+      </div>
+
+      <div class="workout-result" id="workoutResult">
+        <div class="workout-header-card" id="workoutHeaderCard"></div>
+        <div id="muscleGroupSections"></div>
+        <div class="action-row">
+          <button class="btn-secondary" onclick="clearResult()">Clear</button>
+          <button class="btn-primary-full" onclick="saveToHistory()">Save to History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div class="view" id="view-history">
+      <div id="historyContainer">
+        <div class="history-empty">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <h3>No workouts saved yet</h3>
+          <p>Import a workout from a video link to get started</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div class="view" id="view-settings">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          OpenRouter API
+        </div>
+        <div class="settings-group">
+          <div id="apiStatusBadge" class="status-badge disconnected"><span class="status-dot"></span> Not configured</div>
+          <div>
+            <label class="settings-label">API Base URL</label>
+            <input type="url" class="input-field" id="apiBaseUrl" placeholder="https://openrouter.ai/api/v1" value="https://openrouter.ai/api/v1">
+          </div>
+          <div>
+            <label class="settings-label">API Key</label>
+            <div class="input-row">
+              <input type="password" class="input-field" id="apiKey" placeholder="sk-or-…" style="padding-right:44px">
+              <button class="input-toggle" onclick="toggleKeyVis()" aria-label="Toggle API key visibility">
+                <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="settings-label">Model</label>
+            <input type="text" class="input-field" id="modelName" placeholder="google/gemini-2.0-flash-exp:free" value="google/gemini-2.0-flash-exp:free">
+          </div>
+          <p class="help-text">Get a free key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">openrouter.ai/keys</a>. Recommended free models: <strong>google/gemini-2.0-flash-exp:free</strong> or <strong>meta-llama/llama-3.1-8b-instruct:free</strong>.</p>
+          <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          How It Works
+        </div>
+        <p class="help-text" style="font-size:var(--text-sm);line-height:1.8;color:var(--text-muted)">
+          1. <strong style="color:var(--text)">Configure</strong> your OpenRouter API key and preferred model in Settings.<br>
+          2. <strong style="color:var(--text)">Paste</strong> an Instagram Reel, TikTok, or YouTube link on the Import tab.<br>
+          3. The AI generates a <strong style="color:var(--text)">structured workout</strong> with exercises grouped by muscle group — chest, back, legs, etc.<br>
+          4. <strong style="color:var(--text)">Edit</strong> sets, reps and weights inline, then save.<br>
+          5. All workouts are <strong style="color:var(--text)">saved to your device</strong> and viewable in History.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Data & Backup
+        </div>
+        <div class="settings-group">
+          <p class="help-text" style="font-size:var(--text-sm);line-height:1.6">Your workouts are saved locally on this device. Export a backup or import from another device.</p>
+          <div class="action-row">
+            <button class="btn-secondary" onclick="exportData()" style="flex:1">Export JSON</button>
+            <button class="btn-secondary" onclick="document.getElementById('importFile').click()" style="flex:1">Import JSON</button>
+          </div>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- QUICK SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal" onclick="closeModal('settingsModal',event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Quick API Setup</div>
+      <button class="modal-close" onclick="forceClose('settingsModal')" aria-label="Close">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="settings-group">
+      <div>
+        <label class="settings-label">API Base URL</label>
+        <input type="url" class="input-field" id="mUrl" placeholder="https://openrouter.ai/api/v1">
+      </div>
+      <div>
+        <label class="settings-label">API Key</label>
+        <input type="password" class="input-field" id="mKey" placeholder="sk-or-…">
+      </div>
+      <div>
+        <label class="settings-label">Model</label>
+        <input type="text" class="input-field" id="mModel" placeholder="google/gemini-2.0-flash-exp:free">
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveModalSettings()">Save &amp; Close</button>
+  </div>
+</div>
+
+<!-- HISTORY DETAIL MODAL -->
+<div class="modal-overlay" id="historyModal" onclick="closeModal('historyModal',event)">
+  <div class="modal" id="historyModalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// PWA SETUP — inline manifest + service worker + icons
+// ═══════════════════════════════════════════
+
+function generateIconDataURL(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const r = size * 0.18; // corner radius
+
+  // Background rounded rect
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#0f1117';
+  ctx.fill();
+
+  // Blue inner square
+  const pad = size * 0.15;
+  const iSize = size - pad * 2;
+  const ir = iSize * 0.2;
+  ctx.beginPath();
+  ctx.moveTo(pad + ir, pad);
+  ctx.lineTo(pad + iSize - ir, pad);
+  ctx.quadraticCurveTo(pad + iSize, pad, pad + iSize, pad + ir);
+  ctx.lineTo(pad + iSize, pad + iSize - ir);
+  ctx.quadraticCurveTo(pad + iSize, pad + iSize, pad + iSize - ir, pad + iSize);
+  ctx.lineTo(pad + ir, pad + iSize);
+  ctx.quadraticCurveTo(pad, pad + iSize, pad, pad + iSize - ir);
+  ctx.lineTo(pad, pad + ir);
+  ctx.quadraticCurveTo(pad, pad, pad + ir, pad);
+  ctx.closePath();
+  ctx.fillStyle = '#5b8af5';
+  ctx.fill();
+
+  // Dumbbell icon (white)
+  ctx.strokeStyle = 'white';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const s = size;
+  const lw = s * 0.07;
+  ctx.lineWidth = lw;
+
+  const cx = s / 2, cy = s / 2;
+  const barLen = s * 0.28;
+  const plateW = s * 0.065;
+  const plateH = s * 0.24;
+  const collarW = s * 0.045;
+  const collarH = s * 0.18;
+
+  // Bar
+  ctx.beginPath();
+  ctx.moveTo(cx - barLen, cy);
+  ctx.lineTo(cx + barLen, cy);
+  ctx.stroke();
+
+  // Left plates
+  ctx.lineWidth = plateW;
+  ctx.beginPath();
+  ctx.moveTo(cx - barLen - plateW/2, cy - plateH/2);
+  ctx.lineTo(cx - barLen - plateW/2, cy + plateH/2);
+  ctx.stroke();
+
+  // Right plates
+  ctx.beginPath();
+  ctx.moveTo(cx + barLen + plateW/2, cy - plateH/2);
+  ctx.lineTo(cx + barLen + plateW/2, cy + plateH/2);
+  ctx.stroke();
+
+  // Left collar
+  ctx.lineWidth = collarW;
+  ctx.beginPath();
+  ctx.moveTo(cx - barLen + collarW/2, cy - collarH/2);
+  ctx.lineTo(cx - barLen + collarW/2, cy + collarH/2);
+  ctx.stroke();
+
+  // Right collar
+  ctx.beginPath();
+  ctx.moveTo(cx + barLen - collarW/2, cy - collarH/2);
+  ctx.lineTo(cx + barLen - collarW/2, cy + collarH/2);
+  ctx.stroke();
+
+  return canvas.toDataURL('image/png');
+}
+
+function setupPWA() {
+  // Generate icons
+  const icon192 = generateIconDataURL(192);
+  const icon512 = generateIconDataURL(512);
+  const icon180 = generateIconDataURL(180);
+
+  // Set apple touch icon
+  document.getElementById('appleTouchIcon').href = icon180;
+
+  // Inline manifest
+  const manifest = {
+    name: 'GymLog AI',
+    short_name: 'GymLog',
+    description: 'AI-powered gym workout logger',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0f1117',
+    theme_color: '#0f1117',
+    orientation: 'portrait',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const manifestURL = URL.createObjectURL(manifestBlob);
+  document.getElementById('manifestLink').href = manifestURL;
+
+  // Register inline service worker
+  const swCode = `
+const CACHE = 'gymlogai-v1';
+const ASSETS = ['/'];
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+
+// Network-first for API calls, cache-first for assets
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  
+  // Skip non-GET and external API calls
+  if (e.request.method !== 'GET') return;
+  if (url.hostname === 'openrouter.ai') return;
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(e.request).then(cached =>
+          cached || fetch(e.request).then(resp => { cache.put(e.request, resp.clone()); return resp; })
+        )
+      )
+    );
+    return;
+  }
+  
+  // For the HTML file itself — cache it so it works offline
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        fetch(e.request).then(resp => {
+          cache.put(e.request, resp.clone());
+          return resp;
+        }).catch(() => cache.match(e.request))
+      )
+    );
+  }
+});
+`;
+
+  if ('serviceWorker' in navigator) {
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    const swURL = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL, { scope: '/' })
+      .then(() => console.log('SW registered'))
+      .catch(e => console.log('SW registration failed (expected in file://):', e.message));
+  }
+
+  // Show install banner in Safari (not in standalone, not dismissed)
+  const isStandalone = window.navigator.standalone === true;
+  const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+  const dismissed = localStorage.getItem('installBannerDismissed');
+  if (!isStandalone && isSafari && !dismissed) {
+    document.getElementById('installBanner').classList.add('visible');
+  }
+}
+
+function dismissInstallBanner() {
+  document.getElementById('installBanner').classList.remove('visible');
+  localStorage.setItem('installBannerDismissed', '1');
+}
+
+// Run PWA setup after page load
+window.addEventListener('load', setupPWA);
+
+// ═══════════════════════════════════════════
+// MUSCLE GROUP CONFIG
+// ═══════════════════════════════════════════
+const MG = {
+  chest:     { label:'Chest',        color:'var(--mg-chest)',     dim:'var(--mg-chest-dim)',     keywords:['chest','pec','bench','fly','push','press','incline','decline','dip'] },
+  back:      { label:'Back',         color:'var(--mg-back)',      dim:'var(--mg-back-dim)',      keywords:['back','row','pull','lat','deadlift','rdl','rack','rhomboid','trap','pulldown','pullup','chin'] },
+  shoulders: { label:'Shoulders',    color:'var(--mg-shoulders)', dim:'var(--mg-shoulders-dim)', keywords:['shoulder','delt','overhead','press','lateral raise','front raise','arnold','upright','shrug'] },
+  biceps:    { label:'Biceps',       color:'var(--mg-biceps)',    dim:'var(--mg-biceps-dim)',    keywords:['bicep','curl','hammer','preacher','concentration','supination'] },
+  triceps:   { label:'Triceps',      color:'var(--mg-triceps)',   dim:'var(--mg-triceps-dim)',   keywords:['tricep','pushdown','extension','skullcrusher','dip','close grip','kickback'] },
+  legs:      { label:'Legs',         color:'var(--mg-legs)',      dim:'var(--mg-legs-dim)',      keywords:['leg','squat','lunge','quad','hamstring','glute','calf','hip thrust','step up','leg press','leg curl','leg extension','sumo'] },
+  core:      { label:'Core',         color:'var(--mg-core)',      dim:'var(--mg-core-dim)',      keywords:['core','ab','crunch','plank','situp','sit-up','oblique','mountain climber','hollow','russian twist','leg raise','v-up'] },
+  cardio:    { label:'Cardio / HIIT',color:'var(--mg-cardio)',    dim:'var(--mg-cardio-dim)',    keywords:['cardio','run','jog','burpee','jump','box jump','sprint','hiit','skip','cycling','bike','rowing','elliptical','jumping jack'] },
+  full:      { label:'Full Body',    color:'var(--mg-full)',      dim:'var(--mg-full-dim)',      keywords:['full body','clean','snatch','thruster','turkish','kettlebell swing','bear crawl','battle rope'] },
+  other:     { label:'Other',        color:'var(--mg-other)',     dim:'var(--mg-other-dim)',     keywords:[] }
+};
+
+function classifyMuscle(exName, exMuscle) {
+  const text = ((exName || '') + ' ' + (exMuscle || '')).toLowerCase();
+  for (const [key, cfg] of Object.entries(MG)) {
+    if (key === 'other') continue;
+    if (cfg.keywords.some(k => text.includes(k))) return key;
+  }
+  return 'other';
+}
+
+function groupExercises(exercises) {
+  const groups = {};
+  exercises.forEach((ex, i) => {
+    const mg = ex.muscleGroup || classifyMuscle(ex.name, ex.muscle);
+    ex._mg = mg; ex._idx = i;
+    if (!groups[mg]) groups[mg] = [];
+    groups[mg].push(ex);
+  });
+  const ordered = {};
+  Object.keys(MG).forEach(k => { if (groups[k]) ordered[k] = groups[k]; });
+  return ordered;
+}
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const S = {
+  apiBaseUrl: 'https://openrouter.ai/api/v1',
+  apiKey: '',
+  model: 'google/gemini-2.0-flash-exp:free',
+  workouts: [],
+  current: null,
+  theme: 'dark'
+};
+
+const LS_KEY = 'gymlogai_v2';
+function persist() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ apiBaseUrl: S.apiBaseUrl, apiKey: S.apiKey, model: S.model, workouts: S.workouts, theme: S.theme })); } catch(e) {}
+}
+function hydrate() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (d) {
+      if (d.apiBaseUrl) S.apiBaseUrl = d.apiBaseUrl;
+      if (d.apiKey) S.apiKey = d.apiKey;
+      if (d.model) S.model = d.model;
+      if (d.workouts) S.workouts = d.workouts;
+      if (d.theme) S.theme = d.theme;
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+hydrate();
+applyTheme(S.theme);
+populateSettings();
+updateApiStatus();
+renderHistory();
+
+// ═══════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════
+function toggleTheme() { S.theme = S.theme === 'dark' ? 'light' : 'dark'; applyTheme(S.theme); persist(); }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeToggle');
+  btn.innerHTML = t === 'light'
+    ? '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+    : '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+}
+
+// ═══════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════
+function switchView(id, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function populateSettings() {
+  document.getElementById('apiBaseUrl').value = S.apiBaseUrl;
+  document.getElementById('apiKey').value = S.apiKey;
+  document.getElementById('modelName').value = S.model;
+}
+function saveSettings() {
+  S.apiBaseUrl = document.getElementById('apiBaseUrl').value.trim().replace(/\/$/, '');
+  S.apiKey = document.getElementById('apiKey').value.trim();
+  S.model = document.getElementById('modelName').value.trim();
+  updateApiStatus(); persist(); showToast('Settings saved', 'success');
+}
+function updateApiStatus() {
+  const el = document.getElementById('apiStatusBadge');
+  if (S.apiKey) { el.className = 'status-badge connected'; el.innerHTML = '<span class="status-dot"></span> Connected — ' + h(S.model || 'No model'); }
+  else { el.className = 'status-badge disconnected'; el.innerHTML = '<span class="status-dot"></span> Not configured'; }
+}
+function toggleKeyVis() {
+  const inp = document.getElementById('apiKey');
+  const icon = document.getElementById('eyeIcon');
+  if (inp.type === 'password') { inp.type = 'text'; icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'; }
+  else { inp.type = 'password'; icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'; }
+}
+function openSettingsModal() {
+  document.getElementById('mUrl').value = S.apiBaseUrl;
+  document.getElementById('mKey').value = S.apiKey;
+  document.getElementById('mModel').value = S.model;
+  document.getElementById('settingsModal').classList.add('open');
+}
+function saveModalSettings() {
+  S.apiBaseUrl = document.getElementById('mUrl').value.trim().replace(/\/$/, '');
+  S.apiKey = document.getElementById('mKey').value.trim();
+  S.model = document.getElementById('mModel').value.trim();
+  populateSettings(); updateApiStatus(); forceClose('settingsModal'); persist(); showToast('Settings saved', 'success');
+}
+function closeModal(id, e) { if (e && e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+function forceClose(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════
+// EXPORT / IMPORT DATA
+// ═══════════════════════════════════════════
+function exportData() {
+  const data = { workouts: S.workouts, exportedAt: new Date().toISOString(), version: 2 };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'gymlogai-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup exported!', 'success');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.workouts && Array.isArray(data.workouts)) {
+        // Merge: add workouts not already in history (by id)
+        const existingIds = new Set(S.workouts.map(w => w.id));
+        const newWorkouts = data.workouts.filter(w => !existingIds.has(w.id));
+        S.workouts = [...newWorkouts, ...S.workouts];
+        persist(); renderHistory();
+        showToast(`Imported ${newWorkouts.length} workouts`, 'success');
+      } else {
+        showToast('Invalid backup file', 'error-t');
+      }
+    } catch {
+      showToast('Could not read file', 'error-t');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ═══════════════════════════════════════════
+// IMPORT WORKOUT
+// ═══════════════════════════════════════════
+async function importWorkout() {
+  const url = document.getElementById('urlInput').value.trim();
+  const ctx = document.getElementById('contextInput').value.trim();
+  hideError(); clearResult();
+  if (!url) { showError('Missing URL', 'Please paste a video link.'); return; }
+  if (!S.apiKey) { showError('API Not Configured', 'Tap ⚙ to add your OpenRouter API key first.'); return; }
+  setLoading(true);
+  try {
+    const raw = await callAI(buildPrompt(url, ctx));
+    setLoading(false);
+    const w = parseWorkout(raw, url);
+    if (w) { S.current = w; renderWorkout(w); }
+    else showError('Parse Error', 'Could not parse AI response. Try a different model or add more context.');
+  } catch(err) {
+    setLoading(false);
+    showError('API Error', err.message || 'Could not reach the API. Check your key and URL.');
+  }
+}
+
+function buildPrompt(url, ctx) {
+  return `You are a fitness expert AI. The user has shared this video link: ${url}
+${ctx ? 'User context: ' + ctx : ''}
+
+Generate a complete structured workout routine that this video likely demonstrates. Respond ONLY with valid raw JSON (no markdown, no code fences):
+
+{
+  "name": "Short exciting workout name",
+  "type": "Strength|HIIT|Cardio|Yoga|Mobility|Bodyweight|etc",
+  "duration": "e.g. 45 mins",
+  "difficulty": "Beginner|Intermediate|Advanced",
+  "equipment": "e.g. Dumbbells, No equipment",
+  "description": "2-3 sentence summary",
+  "exercises": [
+    {
+      "name": "Exercise name",
+      "muscleGroup": "chest|back|shoulders|biceps|triceps|legs|core|cardio|full|other",
+      "muscle": "specific muscle e.g. upper chest",
+      "sets": 3,
+      "reps": "8-10",
+      "rest": "60s",
+      "notes": "Form tip or coaching cue"
+    }
+  ]
+}
+
+Include 5-10 exercises. Use the muscleGroup field with exactly one of: chest, back, shoulders, biceps, triceps, legs, core, cardio, full, other.`;
+}
+
+async function callAI(prompt) {
+  const base = (S.apiBaseUrl || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+  const endpoint = base.endsWith('/chat/completions') ? base : base + '/chat/completions';
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.apiKey, 'HTTP-Referer': 'https://gymlogai.app', 'X-Title': 'GymLog AI' },
+    body: JSON.stringify({ model: S.model || 'google/gemini-2.0-flash-exp:free', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 2000 })
+  });
+  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e?.error?.message || 'HTTP ' + resp.status); }
+  const data = await resp.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+function parseWorkout(raw, url) {
+  let cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  try {
+    const obj = JSON.parse(cleaned);
+    if (!obj.exercises) return null;
+    obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now();
+    return obj;
+  } catch {
+    const m = cleaned.match(/\{[\s\S]*\}/);
+    if (m) { try { const obj = JSON.parse(m[0]); obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now(); return obj; } catch { return null; } }
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER WORKOUT
+// ═══════════════════════════════════════════
+let exCardMap = {};
+
+function renderWorkout(w) {
+  exCardMap = {};
+  document.getElementById('workoutHeaderCard').innerHTML = `
+    <div class="workout-name">${h(w.name || 'Imported Workout')}</div>
+    <div class="workout-meta">
+      ${w.type ? `<span class="workout-tag">📋 ${h(w.type)}</span>` : ''}
+      ${w.duration ? `<span class="workout-tag">⏱ ${h(w.duration)}</span>` : ''}
+      ${w.difficulty ? `<span class="workout-tag">⚡ ${h(w.difficulty)}</span>` : ''}
+      ${w.equipment ? `<span class="workout-tag">🏋️ ${h(w.equipment)}</span>` : ''}
+    </div>
+    ${w.description ? `<div class="workout-description">${h(w.description)}</div>` : ''}
+  `;
+
+  const groups = groupExercises(w.exercises);
+  let html = '';
+  let globalIdx = 0;
+
+  for (const [mgKey, exList] of Object.entries(groups)) {
+    const cfg = MG[mgKey] || MG.other;
+    html += `<div class="muscle-group-section">
+      <div class="mg-header" style="background:${cfg.dim}">
+        <div class="mg-dot" style="background:${cfg.color}"></div>
+        <div class="mg-label" style="color:${cfg.color}">${cfg.label}</div>
+        <div class="mg-count" style="color:${cfg.color}">${exList.length} exercise${exList.length !== 1 ? 's' : ''}</div>
+      </div>`;
+
+    exList.forEach(ex => {
+      const idx = globalIdx++;
+      exCardMap[idx] = ex;
+      html += `<div class="exercise-card" id="exCard${idx}">
+        <div class="exercise-header" onclick="toggleEx(${idx})">
+          <div class="exercise-num" style="background:${cfg.dim};color:${cfg.color}">${idx + 1}</div>
+          <div class="exercise-name">${h(ex.name)}</div>
+          <div class="exercise-sets-badge">${ex.sets || 3} sets</div>
+          <div class="exercise-chevron"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="exercise-body">
+          <table class="sets-table">
+            <thead><tr><th>Set</th><th>Reps / Time</th><th>Weight (kg)</th></tr></thead>
+            <tbody>${buildSetRows(ex, idx)}</tbody>
+          </table>
+          ${ex.muscle ? `<div style="font-size:var(--text-xs);color:var(--text-muted)">🎯 ${h(ex.muscle)}</div>` : ''}
+          ${ex.rest ? `<div style="font-size:var(--text-xs);color:var(--text-muted)">⏸ Rest: ${h(ex.rest)}</div>` : ''}
+          ${ex.notes ? `<div class="exercise-notes"><strong>Tip:</strong> ${h(ex.notes)}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('muscleGroupSections').innerHTML = html;
+  document.getElementById('exCard0')?.classList.add('expanded');
+  document.getElementById('workoutResult').classList.add('visible');
+}
+
+function buildSetRows(ex, idx) {
+  const count = parseInt(ex.sets) || 3;
+  let r = '';
+  for (let s = 0; s < count; s++) {
+    r += `<tr class="set-row">
+      <td class="set-num">Set ${s + 1}</td>
+      <td><input type="text" class="set-input" value="${h(String(ex.reps || '10'))}" aria-label="Reps set ${s+1}"></td>
+      <td><input type="number" class="set-input" value="" placeholder="—" min="0" step="0.5" aria-label="Weight set ${s+1}"></td>
+    </tr>`;
+  }
+  return r;
+}
+
+function toggleEx(i) { document.getElementById('exCard' + i)?.classList.toggle('expanded'); }
+
+// ═══════════════════════════════════════════
+// SAVE
+// ═══════════════════════════════════════════
+function saveToHistory() {
+  if (!S.current) return;
+  const w = JSON.parse(JSON.stringify(S.current));
+  w.exercises.forEach((ex, globalIdx) => {
+    const card = document.getElementById('exCard' + globalIdx);
+    if (!card) return;
+    const inputs = card.querySelectorAll('.set-input');
+    const sets = [];
+    for (let s = 0; s < (parseInt(ex.sets) || 3); s++) {
+      sets.push({ reps: inputs[s*2]?.value || ex.reps, weight: inputs[s*2+1]?.value || null });
+    }
+    ex.loggedSets = sets;
+  });
+  w.savedAt = new Date().toISOString();
+  w.id = Date.now();
+  S.workouts.unshift(w);
+  persist(); renderHistory();
+  showToast('Workout saved!', 'success');
+}
+
+function clearResult() {
+  document.getElementById('workoutResult').classList.remove('visible');
+  document.getElementById('workoutHeaderCard').innerHTML = '';
+  document.getElementById('muscleGroupSections').innerHTML = '';
+  S.current = null; exCardMap = {};
+}
+
+// ═══════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════
+function renderHistory() {
+  const c = document.getElementById('historyContainer');
+  if (!S.workouts.length) {
+    c.innerHTML = `<div class="history-empty">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <h3>No workouts saved yet</h3><p>Import a workout from a video link to get started</p></div>`;
+    return;
+  }
+  const byDate = {};
+  S.workouts.forEach((w, i) => {
+    const d = dateLabel(w.savedAt || w.importedAt);
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push({ w, i });
+  });
+  let html = '<div class="history-list">';
+  for (const [date, items] of Object.entries(byDate)) {
+    html += `<div class="history-date-group"><div class="history-date-label">${date}</div>`;
+    items.forEach(({ w, i }) => {
+      const groups = groupExercises(w.exercises || []);
+      const chips = Object.keys(groups).map(mg => {
+        const cfg = MG[mg] || MG.other;
+        return `<span class="mg-chip" style="color:${cfg.color};border-color:${cfg.color};background:${cfg.dim}">${cfg.label}</span>`;
+      }).join('');
+      html += `<div class="history-item" onclick="openHistoryDetail(${i})">
+        <div class="history-icon"><svg viewBox="0 0 24 24"><rect x="1" y="9" width="4" height="6" rx="1"/><rect x="19" y="9" width="4" height="6" rx="1"/><rect x="4" y="7" width="3" height="10" rx="1"/><rect x="17" y="7" width="3" height="10" rx="1"/><line x1="7" y1="12" x2="17" y2="12"/></svg></div>
+        <div class="history-info">
+          <div class="history-name">${h(w.name || 'Workout')}</div>
+          <div class="history-sub">${w.difficulty ? w.difficulty + ' · ' : ''}${w.type || ''}</div>
+          ${chips ? `<div class="mg-chips">${chips}</div>` : ''}
+        </div>
+        <div class="history-count">${(w.exercises || []).length} ex</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+function openHistoryDetail(idx) {
+  const w = S.workouts[idx];
+  if (!w) return;
+  const groups = groupExercises(w.exercises || []);
+  let exHtml = '';
+  for (const [mg, exList] of Object.entries(groups)) {
+    const cfg = MG[mg] || MG.other;
+    exHtml += `<div style="margin-top:var(--space-3)">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)">
+        <div style="width:8px;height:8px;border-radius:50%;background:${cfg.color};flex-shrink:0"></div>
+        <div style="font-family:var(--font-display);font-size:var(--text-sm);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${cfg.color}">${cfg.label}</div>
+      </div>`;
+    exList.forEach((ex) => {
+      exHtml += `<div style="padding:var(--space-3);background:var(--surface-2);border-radius:var(--radius-md);margin-bottom:var(--space-2)">
+        <div style="font-weight:600;font-size:var(--text-sm)">${h(ex.name)}</div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">${ex.sets||3} sets × ${h(String(ex.reps||'N/A'))} reps${ex.rest ? ' · ' + h(ex.rest) : ''}</div>
+        ${ex.loggedSets && ex.loggedSets.some(s=>s.weight) ? `<div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:4px">${ex.loggedSets.map((s,j)=>`Set${j+1}: ${s.reps} reps${s.weight ? ' @ '+s.weight+'kg':''}`).join(' · ')}</div>` : ''}
+        ${ex.notes ? `<div style="font-size:var(--text-xs);color:var(--text-faint);margin-top:4px;font-style:italic">${h(ex.notes)}</div>` : ''}
+      </div>`;
+    });
+    exHtml += '</div>';
+  }
+  document.getElementById('historyModalContent').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${h(w.name)}</div>
+      <button class="modal-close" onclick="forceClose('historyModal')" aria-label="Close">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="workout-meta" style="margin:-4px 0 4px">
+      ${w.type ? `<span class="workout-tag">${h(w.type)}</span>` : ''}
+      ${w.difficulty ? `<span class="workout-tag">${h(w.difficulty)}</span>` : ''}
+      ${w.duration ? `<span class="workout-tag">${h(w.duration)}</span>` : ''}
+      ${w.equipment ? `<span class="workout-tag">${h(w.equipment)}</span>` : ''}
+    </div>
+    ${w.description ? `<p style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.6">${h(w.description)}</p>` : ''}
+    ${exHtml}
+    <div class="action-row" style="margin-top:var(--space-2)">
+      <button class="btn-secondary" onclick="deleteWorkout(${idx})">Delete</button>
+    </div>
+  `;
+  document.getElementById('historyModal').classList.add('open');
+}
+
+function deleteWorkout(idx) {
+  S.workouts.splice(idx, 1);
+  persist(); renderHistory(); forceClose('historyModal'); showToast('Workout deleted');
+}
+
+// ═══════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════
+function setLoading(on) {
+  document.getElementById('loadingCard').classList.toggle('visible', on);
+  document.getElementById('importBtn').disabled = on;
+}
+function showError(title, msg) {
+  document.getElementById('errorTitle').textContent = title;
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorBanner').classList.add('visible');
+}
+function hideError() { document.getElementById('errorBanner').classList.remove('visible'); }
+
+let toastT;
+function showToast(msg, type) {
+  clearTimeout(toastT);
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast' + (type ? ' ' + type : '');
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  toastT = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function dateLabel(iso) {
+  if (!iso) return 'Unknown date';
+  const d = new Date(iso), now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return d.toLocaleDateString('en-GB', { weekday: 'long' });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function h(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
