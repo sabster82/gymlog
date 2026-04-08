@@ -824,13 +824,17 @@ async function importWorkout() {
   const url = document.getElementById('urlInput').value.trim();
   const ctx = document.getElementById('contextInput').value.trim();
   hideError(); clearResult();
-  if (!url) { showError('Missing URL', 'Please paste a video link.'); return; }
-  if (!S.apiKey) { showError('API Not Configured', 'Tap ⚙ to add your OpenRouter API key first.'); return; }
+  if (!url) return showError('Missing URL', 'Please paste a video link.');
+  if (!S.apiKey) return showError('API Not Configured', 'Tap ⚙ to add your OpenRouter API key first.');
   setLoading(true);
   try {
-    const raw = await callAI(buildPrompt(url, ctx));
+    let raw = await callAI(buildPrompt(url, ctx), true);
+    let w = parseWorkout(raw, url);
+    if (!w) {
+      raw = await callAI(buildPrompt(url, ctx, true), true);
+      w = parseWorkout(raw, url);
+    }
     setLoading(false);
-    const w = parseWorkout(raw, url);
     if (w) { S.current = w; renderWorkout(w); }
     else showError('Parse Error', 'Could not parse AI response. Try a different model or add more context.');
   } catch(err) {
@@ -839,60 +843,61 @@ async function importWorkout() {
   }
 }
 
-function buildPrompt(url, ctx) {
-  return `You are a fitness expert AI. The user has shared this video link: ${url}
-${ctx ? 'User context: ' + ctx : ''}
-
-Generate a complete structured workout routine that this video likely demonstrates. Respond ONLY with valid raw JSON (no markdown, no code fences):
-
+function buildPrompt(url, ctx, compact=false) {
+  return `You are a fitness expert. Create a workout from this video link: ${url}${ctx ? ' | Context: ' + ctx : ''}
+Return ONLY JSON. No markdown. Keep it short.
 {
-  "name": "Short exciting workout name",
-  "type": "Strength|HIIT|Cardio|Yoga|Mobility|Bodyweight|etc",
-  "duration": "e.g. 45 mins",
+  "name": "Workout name",
+  "type": "Strength|HIIT|Cardio|Yoga|Mobility|Bodyweight",
+  "duration": "30 mins",
   "difficulty": "Beginner|Intermediate|Advanced",
-  "equipment": "e.g. Dumbbells, No equipment",
-  "description": "2-3 sentence summary",
-  "exercises": [
-    {
-      "name": "Exercise name",
-      "muscleGroup": "chest|back|shoulders|biceps|triceps|legs|core|cardio|full|other",
-      "muscle": "specific muscle e.g. upper chest",
-      "sets": 3,
-      "reps": "8-10",
-      "rest": "60s",
-      "notes": "Form tip or coaching cue"
-    }
-  ]
+  "equipment": "Dumbbells|No equipment",
+  "description": "Short summary",
+  "exercises": [{
+    "name": "Exercise",
+    "muscleGroup": "chest|back|shoulders|biceps|triceps|legs|core|cardio|full|other",
+    "muscle": "specific muscle",
+    "sets": 3,
+    "reps": "8-10",
+    "rest": "60s",
+    "notes": "Short coaching cue"
+  }]
+}
+Use 4-6 exercises.`;
 }
 
-Include 5-10 exercises. Use the muscleGroup field with exactly one of: chest, back, shoulders, biceps, triceps, legs, core, cardio, full, other.`;
-}
-
-async function callAI(prompt) {
+async function callAI(prompt, compact=false) {
   const base = (S.apiBaseUrl || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
   const endpoint = base.endsWith('/chat/completions') ? base : base + '/chat/completions';
   const resp = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.apiKey, 'HTTP-Referer': 'https://gymlogai.app', 'X-Title': 'GymLog AI' },
-    body: JSON.stringify({ model: S.model || 'google/gemini-2.0-flash-exp:free', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 2000 })
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.apiKey, 'HTTP-Referer': location.origin, 'X-Title': 'GymLog AI' },
+    body: JSON.stringify({
+      model: S.model || 'google/gemini-2.0-flash-exp:free',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: compact ? 1200 : 1800,
+      response_format: { type: 'json_object' }
+    })
   });
-  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e?.error?.message || 'HTTP ' + resp.status); }
-  const data = await resp.json();
+  let data;
+  try { data = await resp.json(); } catch (e) { throw new Error('Invalid JSON from API'); }
+  if (!resp.ok) throw new Error(data?.error?.message || 'HTTP ' + resp.status);
   return data.choices?.[0]?.message?.content || '';
 }
 
 function parseWorkout(raw, url) {
-  let cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-  try {
-    const obj = JSON.parse(cleaned);
-    if (!obj.exercises) return null;
-    obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now();
-    return obj;
-  } catch {
-    const m = cleaned.match(/\{[\s\S]*\}/);
-    if (m) { try { const obj = JSON.parse(m[0]); obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now(); return obj; } catch { return null; } }
-    return null;
+  const cleaned = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const attempts = [cleaned, cleaned.match(/\{[\s\S]*\}/)?.[0]].filter(Boolean);
+  for (const candidate of attempts) {
+    try {
+      const obj = JSON.parse(candidate);
+      if (!obj.exercises || !Array.isArray(obj.exercises)) continue;
+      obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now();
+      return obj;
+    } catch {}
   }
+  return null;
 }
 
 // ═══════════════════════════════════════════
