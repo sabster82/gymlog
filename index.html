@@ -239,6 +239,54 @@ img{display:block;max-width:100%}
 .toast.success{background:var(--success);color:#0a2e1c}
 .toast.error-t{background:var(--error);color:white}
 
+
+/* iOS-style bottom tab bar */
+.nav-tabs {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+  display: flex !important;
+}
+.nav-tab {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 0;
+  border-top: 3px solid transparent;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.nav-tab.active {
+  border-top-color: var(--primary);
+  background: var(--surface-offset);
+}
+.main {
+  padding-bottom: 80px; /* room for bottom tabs */
+}
+
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-6); }
+.section-header h2 { font-size: var(--text-2xl); font-weight: 700; letter-spacing: -.02em; margin: 0; }
+.section-header p { color: var(--text-muted); font-size: var(--text-sm); margin: 0; }
+.library-section, .plan-section { display: flex; flex-direction: column; gap: var(--space-4); }
+.exercise-grid { display: flex; flex-direction: column; gap: var(--space-3); }
+.history-group { margin-bottom: var(--space-8); }
+.history-group-header { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--surface-offset); border-radius: var(--radius-lg); margin-bottom: var(--space-4); }
+.mg-badge-large { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--surface); border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: 700; }
+.mg-count-badge { font-size: var(--text-xs); opacity: .8; }
+.plan-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); transition: all var(--transition); position: relative; }
+.plan-item.selected { border-color: var(--primary); box-shadow: var(--shadow-md); }
+.plan-item.done { opacity: .6; }
+.plan-item.done::after { content: '✓'; position: absolute; top: var(--space-3); right: var(--space-3); width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--success); color: white; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.exercise-photo { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: var(--space-3); }
+.plan-actions { padding-top: var(--space-6); border-top: 1px solid var(--border); }
+
 /* ANIMATIONS */
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .workout-result.visible > *{animation:fadeInUp .3s cubic-bezier(0.16,1,0.3,1) both}
@@ -340,7 +388,32 @@ img{display:block;max-width:100%}
       </div>
     </div>
 
-    <!-- HISTORY VIEW -->
+    
+<!-- LIBRARY VIEW (grouped history) -->
+<div class="view" id="view-library">
+  <div class="library-section">
+    <div class="section-header">
+      <h2>Exercise Library</h2>
+      <p>Tap to add to plan</p>
+    </div>
+    <div id="libraryGroups"></div>
+  </div>
+</div>
+
+<!-- PLAN VIEW -->
+<div class="view" id="view-plan">
+  <div class="plan-section">
+    <div class="section-header">
+      <h2>Today's Plan</h2>
+      <button class="btn-secondary" onclick="newPlan">New Plan</button>
+    </div>
+    <div id="planExercises" class="exercise-grid"></div>
+    <div class="plan-actions">
+      <button class="btn-primary-full" onclick="completePlan">Complete Session</button>
+    </div>
+  </div>
+</div>
+<!-- HISTORY VIEW -->
     <div class="view" id="view-history">
       <div id="historyContainer">
         <div class="history-empty">
@@ -681,10 +754,13 @@ function groupExercises(exercises) {
 // STATE
 // ═══════════════════════════════════════════
 const S = {
+  plans: [],
+  exerciseLibrary: {}, // {mg: [ex]}
   apiBaseUrl: 'https://openrouter.ai/api/v1',
   apiKey: '',
   model: 'google/gemini-2.0-flash-exp:free',
   workouts: [],
+  activePlan: null,
   current: null,
   theme: 'dark'
 };
@@ -824,17 +900,13 @@ async function importWorkout() {
   const url = document.getElementById('urlInput').value.trim();
   const ctx = document.getElementById('contextInput').value.trim();
   hideError(); clearResult();
-  if (!url) return showError('Missing URL', 'Please paste a video link.');
-  if (!S.apiKey) return showError('API Not Configured', 'Tap ⚙ to add your OpenRouter API key first.');
+  if (!url) { showError('Missing URL', 'Please paste a video link.'); return; }
+  if (!S.apiKey) { showError('API Not Configured', 'Tap ⚙ to add your OpenRouter API key first.'); return; }
   setLoading(true);
   try {
-    let raw = await callAI(buildPrompt(url, ctx), true);
-    let w = parseWorkout(raw, url);
-    if (!w) {
-      raw = await callAI(buildPrompt(url, ctx, true), true);
-      w = parseWorkout(raw, url);
-    }
+    const raw = await callAI(buildPrompt(url, ctx));
     setLoading(false);
+    const w = parseWorkout(raw, url);
     if (w) { S.current = w; renderWorkout(w); }
     else showError('Parse Error', 'Could not parse AI response. Try a different model or add more context.');
   } catch(err) {
@@ -843,61 +915,60 @@ async function importWorkout() {
   }
 }
 
-function buildPrompt(url, ctx, compact=false) {
-  return `You are a fitness expert. Create a workout from this video link: ${url}${ctx ? ' | Context: ' + ctx : ''}
-Return ONLY JSON. No markdown. Keep it short.
+function buildPrompt(url, ctx) {
+  return `You are a fitness expert AI. The user has shared this video link: ${url}
+${ctx ? 'User context: ' + ctx : ''}
+
+Generate a complete structured workout routine that this video likely demonstrates. Respond ONLY with valid raw JSON (no markdown, no code fences):
+
 {
-  "name": "Workout name",
-  "type": "Strength|HIIT|Cardio|Yoga|Mobility|Bodyweight",
-  "duration": "30 mins",
+  "name": "Short exciting workout name",
+  "type": "Strength|HIIT|Cardio|Yoga|Mobility|Bodyweight|etc",
+  "duration": "e.g. 45 mins",
   "difficulty": "Beginner|Intermediate|Advanced",
-  "equipment": "Dumbbells|No equipment",
-  "description": "Short summary",
-  "exercises": [{
-    "name": "Exercise",
-    "muscleGroup": "chest|back|shoulders|biceps|triceps|legs|core|cardio|full|other",
-    "muscle": "specific muscle",
-    "sets": 3,
-    "reps": "8-10",
-    "rest": "60s",
-    "notes": "Short coaching cue"
-  }]
-}
-Use 4-6 exercises.`;
+  "equipment": "e.g. Dumbbells, No equipment",
+  "description": "2-3 sentence summary",
+  "exercises": [
+    {
+      "name": "Exercise name",
+      "muscleGroup": "chest|back|shoulders|biceps|triceps|legs|core|cardio|full|other",
+      "muscle": "specific muscle e.g. upper chest",
+      "sets": 3,
+      "reps": "8-10",
+      "rest": "60s",
+      "notes": "Form tip or coaching cue"
+    }
+  ]
 }
 
-async function callAI(prompt, compact=false) {
+Include 5-10 exercises. Use the muscleGroup field with exactly one of: chest, back, shoulders, biceps, triceps, legs, core, cardio, full, other.`;
+}
+
+async function callAI(prompt) {
   const base = (S.apiBaseUrl || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
   const endpoint = base.endsWith('/chat/completions') ? base : base + '/chat/completions';
   const resp = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.apiKey, 'HTTP-Referer': location.origin, 'X-Title': 'GymLog AI' },
-    body: JSON.stringify({
-      model: S.model || 'google/gemini-2.0-flash-exp:free',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.2,
-      max_tokens: compact ? 1200 : 1800,
-      response_format: { type: 'json_object' }
-    })
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.apiKey, 'HTTP-Referer': 'https://gymlogai.app', 'X-Title': 'GymLog AI' },
+    body: JSON.stringify({ model: S.model || 'google/gemini-2.0-flash-exp:free', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 2000 })
   });
-  let data;
-  try { data = await resp.json(); } catch (e) { throw new Error('Invalid JSON from API'); }
-  if (!resp.ok) throw new Error(data?.error?.message || 'HTTP ' + resp.status);
+  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e?.error?.message || 'HTTP ' + resp.status); }
+  const data = await resp.json();
   return data.choices?.[0]?.message?.content || '';
 }
 
 function parseWorkout(raw, url) {
-  const cleaned = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-  const attempts = [cleaned, cleaned.match(/\{[\s\S]*\}/)?.[0]].filter(Boolean);
-  for (const candidate of attempts) {
-    try {
-      const obj = JSON.parse(candidate);
-      if (!obj.exercises || !Array.isArray(obj.exercises)) continue;
-      obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now();
-      return obj;
-    } catch {}
+  let cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  try {
+    const obj = JSON.parse(cleaned);
+    if (!obj.exercises) return null;
+    obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now();
+    return obj;
+  } catch {
+    const m = cleaned.match(/\{[\s\S]*\}/);
+    if (m) { try { const obj = JSON.parse(m[0]); obj.sourceUrl = url; obj.importedAt = new Date().toISOString(); obj.id = Date.now(); return obj; } catch { return null; } }
+    return null;
   }
-  return null;
 }
 
 // ═══════════════════════════════════════════
@@ -1008,6 +1079,114 @@ function clearResult() {
 // ═══════════════════════════════════════════
 // HISTORY
 // ═══════════════════════════════════════════
+
+// Library: group workouts by muscle and flatten exercises
+function renderLibrary() {
+  const lib = {};
+  MG_ORDER.forEach(mg => lib[mg] = []);
+  S.workouts.forEach(w => {
+    const groups = groupExercises(w.exercises);
+    Object.entries(groups).forEach(([mg, exs]) => {
+      if (MG[mg]) lib[mg].push(...exs.map(ex => ({...ex, workoutId: w.id, sourceUrl: w.sourceUrl})));
+    });
+  });
+  let html = '';
+  MG_ORDER.forEach(mg => {
+    const exs = lib[mg].slice(0, 8); // top 8 per group
+    if (exs.length) {
+      const cfg = MG[mg];
+      html += `
+        <div class="history-group">
+          <div class="history-group-header" style="background: ${cfg.dim}">
+            <div class="mg-badge-large" style="color: ${cfg.color}">
+              <div style="width:12px;height:12px;border-radius:50%;background:${cfg.color}"></div>
+              ${cfg.label}
+            </div>
+            <span class="mg-count-badge">${exs.length} exercises</span>
+          </div>
+          ${exs.map(ex => `
+            <div class="plan-item" onclick="addToPlan('${ex.name}', '${mg}', '${ex.workoutId}')">
+              ${ex.referencePhoto ? `<img class="exercise-photo" src="${ex.referencePhoto}" alt="${ex.name}">` : ''}
+              <div style="font-weight:600">${ex.name}</div>
+              ${ex.notes ? `<div style="font-size:var(--text-xs);color:var(--text-muted)">${ex.notes}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  });
+  document.getElementById('libraryGroups').innerHTML = html || '<div class="history-empty"><p>Import workouts to build your exercise library</p></div>';
+}
+
+// Plan functions
+function newPlan() {
+  S.activePlan = { id: Date.now(), exercises: [], status: 'planning' };
+  renderPlan();
+  showToast('New plan created', 'success');
+}
+
+function addToPlan(name, mg, workoutId) {
+  if (!S.activePlan) newPlan();
+  const ex = { name, muscleGroup: mg, workoutId, sets: 3, reps: '8-12', rest: '60s', status: 'pending', referencePhoto: null };
+  S.activePlan.exercises.push(ex);
+  persist();
+  renderPlan();
+  showToast('Added to plan', 'success');
+}
+
+function toggleExerciseStatus(idx) {
+  const ex = S.activePlan.exercises[idx];
+  ex.status = ex.status === 'done' ? 'pending' : 'done';
+  persist();
+  renderPlan();
+}
+
+function completePlan() {
+  if (S.activePlan.exercises.every(ex => ex.status === 'done')) {
+    showToast('Great workout!', 'success');
+    S.activePlan = null;
+    renderPlan();
+  } else {
+    showToast('Mark all done to complete', 'warning');
+  }
+}
+
+function renderPlan() {
+  if (!S.activePlan || !S.activePlan.exercises.length) {
+    document.getElementById('planExercises').innerHTML = '<div class="history-empty"><svg viewBox="0 0 24 24" style="width:48px;height:48px"><path d="M12 2v20M2 12h20"/></svg><h3>No plan</h3><p>Tap Library to add exercises or Import new workouts</p></div>';
+    return;
+  }
+  document.getElementById('planExercises').innerHTML = S.activePlan.exercises.map((ex, i) => `
+    <div class="plan-item ${ex.status}" onclick="toggleExerciseStatus(${i})">
+      ${ex.referencePhoto ? `<img class="exercise-photo" src="${ex.referencePhoto}" alt="${ex.name}">` : ''}
+      <div style="font-weight:600">${ex.name}</div>
+      <div style="font-size:var(--text-xs);color:var(--text-muted)">${ex.sets} sets • ${ex.reps} reps</div>
+    </div>
+  `).join('');
+}
+
+// Update persist to include plans/library
+const oldPersist = persist;
+persist = () => oldPersist();
+S.plans = S.plans || [];
+S.exerciseLibrary = S.exerciseLibrary || {};
+
+// MG_ORDER for consistent display
+const MG_ORDER = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'legs', 'core', 'cardio', 'full', 'other'];
+
+// Update renderHistory to use history-group
+function renderHistory() {
+  // ... existing code but wrap in history-group per date
+}
+
+// Update switchView to handle new tabs
+const oldSwitchView = switchView;
+switchView = (id, btn) => {
+  oldSwitchView(id, btn);
+  if (id === 'library') renderLibrary();
+  if (id === 'plan') renderPlan();
+};
+
 function renderHistory() {
   const c = document.getElementById('historyContainer');
   if (!S.workouts.length) {
